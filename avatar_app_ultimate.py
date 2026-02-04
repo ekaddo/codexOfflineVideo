@@ -18,6 +18,8 @@ class App(tk.Tk):
         self.avatar_path = tk.StringVar()
         self.voice_path = tk.StringVar()
         self.ref_video_path = tk.StringVar()
+        self.background_path = tk.StringVar()
+        self.preset_choice = tk.StringVar(value="News Anchor")
 
         self._build_ui()
 
@@ -38,23 +40,42 @@ class App(tk.Tk):
         ttk.Entry(frm, textvariable=self.ref_video_path, width=80).grid(row=5, column=0, sticky="we")
         ttk.Button(frm, text="Browse", command=self._pick_ref).grid(row=5, column=1, padx=pad)
 
-        ttk.Label(frm, text="Script").grid(row=6, column=0, sticky="w", pady=(pad, 0))
+        ttk.Label(frm, text="Preset").grid(row=6, column=0, sticky="w", pady=(pad, 0))
+        preset_menu = ttk.OptionMenu(
+            frm,
+            self.preset_choice,
+            "News Anchor",
+            "News Anchor",
+            "Corporate Presenter",
+            "Teacher",
+            "Coach",
+            "Podcast Close-up",
+            "CEO Keynote",
+            "None (Raw)",
+        )
+        preset_menu.grid(row=6, column=1, sticky="e", padx=(0, pad))
+
+        ttk.Label(frm, text="Background (Optional)").grid(row=7, column=0, sticky="w", pady=(pad, 0))
+        ttk.Entry(frm, textvariable=self.background_path, width=80).grid(row=8, column=0, sticky="we")
+        ttk.Button(frm, text="Browse", command=self._pick_background).grid(row=8, column=1, padx=pad)
+
+        ttk.Label(frm, text="Script").grid(row=9, column=0, sticky="w", pady=(pad, 0))
         self.script_box = tk.Text(frm, height=8, wrap=tk.WORD)
-        self.script_box.grid(row=7, column=0, columnspan=2, sticky="nsew")
+        self.script_box.grid(row=10, column=0, columnspan=2, sticky="nsew")
 
         self.generate_btn = ttk.Button(frm, text="GENERATE VIDEO", command=self._on_generate)
-        self.generate_btn.grid(row=8, column=0, sticky="w", pady=(pad, 0))
+        self.generate_btn.grid(row=11, column=0, sticky="w", pady=(pad, 0))
 
         self.status = tk.StringVar(value="Idle")
-        ttk.Label(frm, textvariable=self.status).grid(row=8, column=1, sticky="e", padx=(0, pad))
+        ttk.Label(frm, textvariable=self.status).grid(row=11, column=1, sticky="e", padx=(0, pad))
 
-        ttk.Label(frm, text="Log").grid(row=9, column=0, sticky="w", pady=(pad, 0))
+        ttk.Label(frm, text="Log").grid(row=12, column=0, sticky="w", pady=(pad, 0))
         self.log_box = tk.Text(frm, height=10, wrap=tk.WORD, state=tk.DISABLED)
-        self.log_box.grid(row=10, column=0, columnspan=2, sticky="nsew")
+        self.log_box.grid(row=13, column=0, columnspan=2, sticky="nsew")
 
         frm.columnconfigure(0, weight=1)
-        frm.rowconfigure(7, weight=1)
         frm.rowconfigure(10, weight=1)
+        frm.rowconfigure(13, weight=1)
 
     def _pick_voice(self):
         path = filedialog.askopenfilename(filetypes=[("Audio", "*.wav;*.mp3")])
@@ -70,6 +91,11 @@ class App(tk.Tk):
         path = filedialog.askopenfilename(filetypes=[("Video", "*.mp4;*.mov;*.mkv")])
         if path:
             self.ref_video_path.set(path)
+
+    def _pick_background(self):
+        path = filedialog.askopenfilename(filetypes=[("Image", "*.png;*.jpg;*.jpeg")])
+        if path:
+            self.background_path.set(path)
 
     def _log(self, msg: str):
         self.log_box.configure(state=tk.NORMAL)
@@ -95,11 +121,14 @@ class App(tk.Tk):
 
         def work():
             try:
+                preset_key = self._preset_key()
                 inputs = PipelineInputs(
                     avatar_image=Path(self.avatar_path.get()),
                     script_text=script,
                     voice_sample=Path(self.voice_path.get()),
                     reference_video=Path(self.ref_video_path.get()) if self.ref_video_path.get() else None,
+                    preset_name=preset_key,
+                    background_image=Path(self.background_path.get()) if self.background_path.get() else None,
                 )
                 outputs = self.pipeline.run(inputs)
                 self._log(f"Done: {outputs.video_path}")
@@ -112,6 +141,18 @@ class App(tk.Tk):
                 self.generate_btn.configure(state=tk.NORMAL)
 
         threading.Thread(target=work, daemon=True).start()
+
+    def _preset_key(self) -> str:
+        mapping = {
+            "News Anchor": "news_anchor",
+            "Corporate Presenter": "corporate_presenter",
+            "Teacher": "teacher",
+            "Coach": "coach",
+            "Podcast Close-up": "podcast_closeup",
+            "CEO Keynote": "ceo_keynote",
+            "None (Raw)": "none",
+        }
+        return mapping.get(self.preset_choice.get(), "news_anchor")
 
 
 if __name__ == "__main__":

@@ -17,15 +17,22 @@ def load_image(path: str | Path) -> Image.Image:
     return img
 
 
-def auto_crop_square(img: Image.Image) -> Image.Image:
+def auto_crop_square(img: Image.Image, focus_y: float | None = None) -> Image.Image:
     width, height = img.size
     size = min(width, height)
     left = (width - size) // 2
-    upper = (height - size) // 2
+    if focus_y is None:
+        upper = (height - size) // 2
+    else:
+        desired_center = int(height * max(0.0, min(1.0, focus_y)))
+        upper = desired_center - size // 2
+        upper = max(0, min(upper, height - size))
     return img.crop((left, upper, left + size, upper + size))
 
 
-def face_center_crop(img: Image.Image) -> Image.Image:
+def face_center_crop(img: Image.Image, focus_y: float | None = None) -> Image.Image:
+    if focus_y is not None:
+        return auto_crop_square(img, focus_y=focus_y)
     if cv2 is None:
         return auto_crop_square(img)
 
@@ -52,9 +59,14 @@ def face_center_crop(img: Image.Image) -> Image.Image:
     return img.crop((left, upper, right, lower))
 
 
-def prepare_avatar_image(path: str | Path, out_path: str | Path, size: int = 512) -> Path:
+def prepare_avatar_image(
+    path: str | Path,
+    out_path: str | Path,
+    size: int = 512,
+    focus_y: float | None = None,
+) -> Path:
     img = load_image(path)
-    img = face_center_crop(img)
+    img = face_center_crop(img, focus_y=focus_y)
     img = img.resize((size, size), Image.LANCZOS)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)

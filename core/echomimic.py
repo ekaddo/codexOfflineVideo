@@ -4,6 +4,7 @@ import os
 import subprocess
 from pathlib import Path
 import tempfile
+import shutil
 
 import soundfile as sf
 
@@ -78,6 +79,12 @@ def run_echomimic(
         except ValueError:
             pass
 
+    # Snapshot existing EchoMimic outputs so we can find the new file
+    echomimic_output_dir = echomimic_dir / "output"
+    existing = set()
+    if echomimic_output_dir.exists():
+        existing = {p.resolve() for p in echomimic_output_dir.rglob("*.mp4")}
+
     cmd = [
         "python",
         str(script_path),
@@ -101,4 +108,27 @@ def run_echomimic(
 
     env = os.environ.copy()
     subprocess.run(cmd, cwd=str(echomimic_dir), check=True, env=env)
+
+    # Find newest mp4 produced by EchoMimic
+    new_files = []
+    if echomimic_output_dir.exists():
+        for p in echomimic_output_dir.rglob("*.mp4"):
+            rp = p.resolve()
+            if rp not in existing:
+                new_files.append(rp)
+
+    if not new_files:
+        # Fallback: take latest file by mtime
+        new_files = sorted(
+            [p.resolve() for p in echomimic_output_dir.rglob("*.mp4")],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+
+    if not new_files:
+        raise FileNotFoundError("EchoMimic did not produce an output video.")
+
+    newest = new_files[0]
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(newest, out_path)
     return out_path

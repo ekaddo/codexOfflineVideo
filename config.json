@@ -4,6 +4,8 @@
   "ffmpeg_path": "ffmpeg",
   "output_dir": "outputs",
   "image_size": 512,
+  "preset": "news_anchor",
+  "preset_background": "",
   "tts": {
     "enable": true,
     "model_name": "tts_models/multilingual/multi-dataset/xtts_v2",

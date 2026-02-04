@@ -9,9 +9,11 @@ import subprocess
 
 from .audio_utils import split_audio
 from .config import load_config
+from .compositing import compose_video
 from .dummy_renderer import generate_dummy_audio, generate_dummy_image, generate_dummy_video
 from .echomimic import run_echomimic
 from .image_utils import prepare_avatar_image
+from .presets import get_preset, render_background, resolve_preset_key
 from .tts import generate_tts
 
 
@@ -21,6 +23,8 @@ class PipelineInputs:
     script_text: str
     voice_sample: Path
     reference_video: Path | None = None
+    preset_name: str | None = None
+    background_image: Path | None = None
 
 
 @dataclass
@@ -28,6 +32,8 @@ class PipelineOutputs:
     audio_path: Path
     image_path: Path
     video_path: Path
+    raw_video_path: Path | None = None
+    composed_video_path: Path | None = None
 
 
 class AvatarPipeline:
@@ -41,7 +47,8 @@ class AvatarPipeline:
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         prepared_image = output_dir / f"avatar_{stamp}.png"
         audio_path = output_dir / f"audio_{stamp}.wav"
-        video_path = output_dir / f"generated_{stamp}.mp4"
+        raw_video_path = output_dir / f"raw_{stamp}.mp4"
+        final_video_path = output_dir / f"generated_{stamp}.mp4"
 
         if os.environ.get("CODEXOFFLINEVIDEO_DUMMY", "0") == "1":
             duration = min(30.0, max(3.0, len(inputs.script_text) / 15))
@@ -50,13 +57,18 @@ class AvatarPipeline:
             generate_dummy_video(
                 image_path=dummy_image,
                 audio_path=dummy_audio,
-                out_path=video_path,
+                out_path=raw_video_path,
                 ffmpeg_path=self.config.get("ffmpeg_path", "ffmpeg"),
             )
         else:
             # Prepare image
+            preset_key = _resolve_preset_key(inputs.preset_name, self.config.get("preset"))
+            preset = get_preset(preset_key)
             prepare_avatar_image(
-                inputs.avatar_image, prepared_image, size=self.config.get("image_size", 512)
+                inputs.avatar_image,
+                prepared_image,
+                size=self.config.get("image_size", 512),
+                focus_y=preset.crop_focus_y if preset else None,
             )
 
             # TTS
@@ -116,7 +128,7 @@ class AvatarPipeline:
                         str(concat_list),
                         "-c",
                         "copy",
-                        str(video_path),
+                        str(raw_video_path),
                     ],
                     check=True,
                 )
@@ -126,12 +138,44 @@ class AvatarPipeline:
                     weights_dir=self.config["echo_mimic_weights"],
                     image_path=prepared_image,
                     audio_path=audio_path,
-                    out_path=video_path,
+                    out_path=raw_video_path,
                     ref_video=inputs.reference_video,
                 )
+
+        preset_key = _resolve_preset_key(inputs.preset_name, self.config.get("preset"))
+        preset = get_preset(preset_key)
+        if preset:
+            background_override = inputs.background_image
+            if not background_override:
+                configured_bg = self.config.get("preset_background", "").strip()
+                if configured_bg:
+                    background_override = Path(configured_bg)
+            bg_path = render_background(preset, output_dir / "presets", background_override)
+            compose_video(
+                background_path=bg_path,
+                avatar_video_path=raw_video_path,
+                out_path=final_video_path,
+                preset=preset,
+                ffmpeg_path=self.config.get("ffmpeg_path", "ffmpeg"),
+            )
+            composed_path = final_video_path
+        else:
+            if raw_video_path != final_video_path:
+                final_video_path = raw_video_path
+            composed_path = None
 
         return PipelineOutputs(
             audio_path=audio_path,
             image_path=prepared_image,
-            video_path=video_path,
+            video_path=final_video_path,
+            raw_video_path=raw_video_path,
+            composed_video_path=composed_path,
         )
+
+
+def _resolve_preset_key(input_value: str | None, default_value: str | None) -> str | None:
+    if input_value and input_value.strip().lower() in {"none", "off", "raw"}:
+        return None
+    if default_value and str(default_value).strip().lower() in {"none", "off", "raw"}:
+        default_value = None
+    return resolve_preset_key(input_value) or resolve_preset_key(default_value) or default_value

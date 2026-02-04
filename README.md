@@ -16,6 +16,7 @@ The app uses a Tkinter GUI and a Python pipeline that can call EchoMimic and Coq
 - Motion cloning via optional reference video
 - Auto-smart cropping to 512x512 to avoid tensor size issues
 - Tkinter desktop GUI (no CLI required)
+- Built-in presenter presets with composited backgrounds (News Anchor, Corporate Presenter, Teacher, Coach)
 
 ## What’s Included
 - `avatar_app_ultimate.py`: Tkinter GUI
@@ -71,6 +72,13 @@ Edit `config.json` to point to your local EchoMimic repo and weights. The app wi
 - `ECHO_MIMIC_DIR`
 - `ECHO_MIMIC_WEIGHTS`
 - `FFMPEG_PATH`
+
+### Presenter Presets + Background Compositing
+Presets control framing, background style, and layout for “news anchor” or “corporate presenter” looks.
+- Default preset in `config.json`: `preset` (`news_anchor`, `corporate_presenter`, `teacher`, `coach`, `podcast_closeup`, `ceo_keynote`, or `none`)
+- Optional custom background image: `preset_background`
+
+The GUI includes a preset dropdown and optional background image picker.
 
 ### EchoMimic Runtime Controls
 These environment variables let you cap runtime for quick previews:
