@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+import os
+
 from .config import load_config
+from .dummy_renderer import generate_dummy_audio, generate_dummy_image, generate_dummy_video
 from .echomimic import run_echomimic
 from .image_utils import prepare_avatar_image
 from .tts import generate_tts
@@ -38,32 +41,43 @@ class AvatarPipeline:
         audio_path = output_dir / f"audio_{stamp}.wav"
         video_path = output_dir / f"generated_{stamp}.mp4"
 
-        # Prepare image
-        prepare_avatar_image(
-            inputs.avatar_image, prepared_image, size=self.config.get("image_size", 512)
-        )
-
-        # TTS
-        tts_cfg = self.config.get("tts", {})
-        if tts_cfg.get("enable", True):
-            generate_tts(
-                text=inputs.script_text,
-                speaker_wav=inputs.voice_sample,
-                out_wav=audio_path,
-                model_name=tts_cfg.get("model_name"),
-                language=tts_cfg.get("language", "en"),
+        if os.environ.get("CODEXOFFLINEVIDEO_DUMMY", "0") == "1":
+            duration = min(30.0, max(3.0, len(inputs.script_text) / 15))
+            dummy_image = generate_dummy_image(prepared_image, size=self.config.get("image_size", 512))
+            dummy_audio = generate_dummy_audio(audio_path, duration_seconds=duration)
+            generate_dummy_video(
+                image_path=dummy_image,
+                audio_path=dummy_audio,
+                out_path=video_path,
+                ffmpeg_path=self.config.get("ffmpeg_path", "ffmpeg"),
             )
         else:
-            raise RuntimeError("TTS is disabled in config.json")
+            # Prepare image
+            prepare_avatar_image(
+                inputs.avatar_image, prepared_image, size=self.config.get("image_size", 512)
+            )
 
-        run_echomimic(
-            echomimic_dir=self.config["echo_mimic_dir"],
-            weights_dir=self.config["echo_mimic_weights"],
-            image_path=prepared_image,
-            audio_path=audio_path,
-            out_path=video_path,
-            ref_video=inputs.reference_video,
-        )
+            # TTS
+            tts_cfg = self.config.get("tts", {})
+            if tts_cfg.get("enable", True):
+                generate_tts(
+                    text=inputs.script_text,
+                    speaker_wav=inputs.voice_sample,
+                    out_wav=audio_path,
+                    model_name=tts_cfg.get("model_name"),
+                    language=tts_cfg.get("language", "en"),
+                )
+            else:
+                raise RuntimeError("TTS is disabled in config.json")
+
+            run_echomimic(
+                echomimic_dir=self.config["echo_mimic_dir"],
+                weights_dir=self.config["echo_mimic_weights"],
+                image_path=prepared_image,
+                audio_path=audio_path,
+                out_path=video_path,
+                ref_video=inputs.reference_video,
+            )
 
         return PipelineOutputs(
             audio_path=audio_path,

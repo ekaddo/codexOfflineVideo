@@ -20,7 +20,7 @@ def load_config(config_path: str | Path = "config.json") -> dict:
     path = Path(config_path)
     config = DEFAULT_CONFIG.copy()
     if path.exists():
-        with path.open("r", encoding="utf-8") as f:
+        with path.open("r", encoding="utf-8-sig") as f:
             user_cfg = json.load(f)
         config = _deep_merge(config, user_cfg)
 
