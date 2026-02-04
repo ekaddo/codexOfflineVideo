@@ -16,7 +16,6 @@ The app uses a Tkinter GUI and a Python pipeline that can call EchoMimic and Coq
 - Motion cloning via optional reference video
 - Auto-smart cropping to 512x512 to avoid tensor size issues
 - Tkinter desktop GUI (no CLI required)
-- Optional LTX-2 renderer mode (not default; ≤30s clips; separate flag)
 
 ## What’s Included
 - `avatar_app_ultimate.py`: Tkinter GUI
@@ -72,46 +71,6 @@ Edit `config.json` to point to your local EchoMimic repo and weights. The app wi
 - `ECHO_MIMIC_DIR`
 - `ECHO_MIMIC_WEIGHTS`
 - `FFMPEG_PATH`
-
-### LTX-2 (Optional, Never Default)
-The LTX-2 renderer is intended for experimental “HQ Intro Mode” only:
-- Separate engine flag
-- ≤30 second clips
-- Never the default renderer
-
-This repo wires LTX-2 as an optional external renderer via `engine.ltx.command`. LTX-2 has a separate, stricter runtime stack: the official docs note Python >= 3.12, CUDA > 12.7, and PyTorch ~= 2.7.
-
-Quick start (from the official LTX-2 repo) uses `uv` to create its environment and requires downloading model weights.
-
-Configure `engine.ltx` in `config.json` like this (replace placeholders with your actual LTX-2 CLI/module):
-```json
-{
-  "engine": {
-    "ltx": {
-      "enabled": true,
-      "duration_seconds": 10,
-      "command": [
-        "C:\\\\path\\\\to\\\\ltx-venv\\\\Scripts\\\\python.exe",
-        "-m",
-        "<ltx_cli_module>",
-        "--prompt",
-        "{prompt}",
-        "--output",
-        "{out_path}",
-        "--duration",
-        "{duration}",
-        "--image",
-        "{image_path}"
-      ],
-      "workdir": "C:\\\\path\\\\to\\\\LTX-2"
-    }
-  }
-}
-```
-
-Notes:
-- LTX-2 mode uses the Script text as the prompt. Voice sample is ignored.
-- If you provide an avatar image, it will be cropped and passed as `{image_path}`.
 
 ## Notes
 - If XTTS is not installed, the app will prompt you to install it.
