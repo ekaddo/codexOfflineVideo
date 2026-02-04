@@ -1,0 +1,23 @@
+﻿{
+  "echo_mimic_dir": "..\\EchoMimic",
+  "echo_mimic_weights": "..\\EchoMimic\\pretrained_weights",
+  "ffmpeg_path": "ffmpeg",
+  "output_dir": "outputs",
+  "image_size": 512,
+  "engine": {
+    "name": "echomimic",
+    "ltx": {
+      "enabled": false,
+      "hq_intro_mode": false,
+      "max_seconds": 30,
+      "duration_seconds": 10,
+      "command": [],
+      "workdir": null
+    }
+  },
+  "tts": {
+    "enable": true,
+    "model_name": "tts_models/multilingual/multi-dataset/xtts_v2",
+    "language": "en"
+  }
+}

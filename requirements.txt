@@ -1,0 +1,7 @@
+﻿Pillow==10.4.0
+numpy==1.26.4
+opencv-python==4.10.0.84
+soundfile==0.12.1
+pydub==0.25.1
+tqdm==4.66.5
+psutil==6.0.0
