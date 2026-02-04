@@ -1,0 +1,15 @@
+﻿pretrained_base_model_path: "I:/dev/codex/codexOfflineVideo/EchoMimic/pretrained_weights/sd-image-variations-diffusers/"
+pretrained_vae_path: "I:/dev/codex/codexOfflineVideo/EchoMimic/pretrained_weights/sd-vae-ft-mse/"
+audio_model_path: "I:/dev/codex/codexOfflineVideo/EchoMimic/pretrained_weights/audio_processor/whisper_tiny.pt"
+
+denoising_unet_path: "I:/dev/codex/codexOfflineVideo/EchoMimic/pretrained_weights/denoising_unet.pth"
+reference_unet_path: "I:/dev/codex/codexOfflineVideo/EchoMimic/pretrained_weights/reference_unet.pth"
+face_locator_path: "I:/dev/codex/codexOfflineVideo/EchoMimic/pretrained_weights/face_locator.pth"
+motion_module_path: "I:/dev/codex/codexOfflineVideo/EchoMimic/pretrained_weights/motion_module.pth"
+
+inference_config: "I:/dev/codex/codexOfflineVideo/EchoMimic/configs/inference/inference_v2.yaml"
+weight_dtype: 'fp16'
+
+test_cases:
+  "I:/dev/codex/codexOfflineVideo/codexOfflineVideo/outputs/echomimic_test/avatar.png":
+    - "I:/dev/codex/codexOfflineVideo/codexOfflineVideo/outputs/echomimic_test/audio.wav"

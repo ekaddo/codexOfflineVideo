@@ -8,5 +8,9 @@
     "enable": true,
     "model_name": "tts_models/multilingual/multi-dataset/xtts_v2",
     "language": "en"
+  },
+  "chunking": {
+    "enabled": true,
+    "chunk_seconds": 360
   }
 }

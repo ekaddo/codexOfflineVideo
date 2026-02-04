@@ -72,6 +72,16 @@ Edit `config.json` to point to your local EchoMimic repo and weights. The app wi
 - `ECHO_MIMIC_WEIGHTS`
 - `FFMPEG_PATH`
 
+### EchoMimic Runtime Controls
+These environment variables let you cap runtime for quick previews:
+- `CODEXOFFLINEVIDEO_ECHOMIMIC_MAX_FRAMES` (e.g., `48`)
+- `CODEXOFFLINEVIDEO_ECHOMIMIC_STEPS` (e.g., `15`)
+
+### Long-Form Chunking (6-Minute Segments)
+The pipeline can split long audio into 6-minute chunks and stitch the video back together.
+- Set in `config.json` under `chunking.chunk_seconds` (default `360`)
+- Override per run with `CODEXOFFLINEVIDEO_CHUNK_SECONDS`
+
 ## Notes
 - If XTTS is not installed, the app will prompt you to install it.
 - EchoMimic runs as a subprocess; keep it on a fast SSD.

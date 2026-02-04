@@ -5,7 +5,9 @@ from datetime import datetime
 from pathlib import Path
 
 import os
+import subprocess
 
+from .audio_utils import split_audio
 from .config import load_config
 from .dummy_renderer import generate_dummy_audio, generate_dummy_image, generate_dummy_video
 from .echomimic import run_echomimic
@@ -70,14 +72,63 @@ class AvatarPipeline:
             else:
                 raise RuntimeError("TTS is disabled in config.json")
 
-            run_echomimic(
-                echomimic_dir=self.config["echo_mimic_dir"],
-                weights_dir=self.config["echo_mimic_weights"],
-                image_path=prepared_image,
-                audio_path=audio_path,
-                out_path=video_path,
-                ref_video=inputs.reference_video,
-            )
+            chunk_cfg = self.config.get("chunking", {})
+            chunk_enabled = chunk_cfg.get("enabled", False)
+            chunk_seconds = int(chunk_cfg.get("chunk_seconds", 360))
+            env_chunk_seconds = os.environ.get("CODEXOFFLINEVIDEO_CHUNK_SECONDS")
+            if env_chunk_seconds:
+                try:
+                    chunk_seconds = int(env_chunk_seconds)
+                except ValueError:
+                    pass
+
+            if chunk_enabled and chunk_seconds > 0:
+                chunk_dir = output_dir / f"chunks_{stamp}"
+                chunk_audios = split_audio(audio_path, chunk_dir, chunk_seconds)
+                chunk_videos = []
+                for idx, chunk_audio in enumerate(chunk_audios, start=1):
+                    chunk_video = output_dir / f"chunk_{stamp}_{idx:03d}.mp4"
+                    run_echomimic(
+                        echomimic_dir=self.config["echo_mimic_dir"],
+                        weights_dir=self.config["echo_mimic_weights"],
+                        image_path=prepared_image,
+                        audio_path=chunk_audio,
+                        out_path=chunk_video,
+                        ref_video=inputs.reference_video,
+                    )
+                    chunk_videos.append(chunk_video)
+
+                concat_list = output_dir / f"concat_{stamp}.txt"
+                concat_list.write_text(
+                    "\n".join([f"file '{p.resolve().as_posix()}'" for p in chunk_videos]),
+                    encoding="utf-8",
+                )
+                ffmpeg_path = self.config.get("ffmpeg_path", "ffmpeg")
+                subprocess.run(
+                    [
+                        ffmpeg_path,
+                        "-y",
+                        "-f",
+                        "concat",
+                        "-safe",
+                        "0",
+                        "-i",
+                        str(concat_list),
+                        "-c",
+                        "copy",
+                        str(video_path),
+                    ],
+                    check=True,
+                )
+            else:
+                run_echomimic(
+                    echomimic_dir=self.config["echo_mimic_dir"],
+                    weights_dir=self.config["echo_mimic_weights"],
+                    image_path=prepared_image,
+                    audio_path=audio_path,
+                    out_path=video_path,
+                    ref_video=inputs.reference_video,
+                )
 
         return PipelineOutputs(
             audio_path=audio_path,
