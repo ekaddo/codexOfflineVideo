@@ -16,6 +16,7 @@ from .dummy_renderer import generate_dummy_audio, generate_dummy_image, generate
 from .echomimic import run_echomimic
 from .image_utils import prepare_avatar_image
 from .presets import get_preset, render_background, resolve_preset_key
+from .speech_overlay import build_karaoke_ass
 from .tts import generate_tts
 
 
@@ -158,6 +159,15 @@ class AvatarPipeline:
                 duration_sec = float(sf.info(str(audio_path)).duration)
             except Exception:
                 duration_sec = None
+
+            subtitle_ass = None
+            if preset.content_box is not None:
+                subtitle_ass = build_karaoke_ass(
+                    script_text=inputs.script_text,
+                    audio_path=audio_path,
+                    preset=preset,
+                    out_path=output_dir / f"speech_{stamp}.ass",
+                )
             compose_video(
                 background_path=bg_path,
                 avatar_video_path=raw_video_path,
@@ -168,6 +178,7 @@ class AvatarPipeline:
                 encoder=self.config.get("composition", {}).get("encoder", "libx264"),
                 preset_speed=self.config.get("composition", {}).get("preset", "veryfast"),
                 crf=int(self.config.get("composition", {}).get("crf", 23)),
+                subtitle_ass=subtitle_ass,
             )
             composed_path = final_video_path
         else:

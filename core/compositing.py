@@ -16,10 +16,14 @@ def compose_video(
     encoder: str = "libx264",
     preset_speed: str = "veryfast",
     crf: int = 23,
+    subtitle_ass: str | Path | None = None,
 ) -> Path:
     background_path = Path(background_path)
     avatar_video_path = Path(avatar_video_path)
     out_path = Path(out_path)
+    background_path = background_path.resolve()
+    avatar_video_path = avatar_video_path.resolve()
+    out_path = out_path.resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     bg_is_image = background_path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp"}
@@ -30,8 +34,13 @@ def compose_video(
     filter_complex = (
         f"[0:v]scale={width}:{height}[bg];"
         f"[1:v]scale={av_w}:{av_h}[av];"
-        f"[bg][av]overlay={av_x}:{av_y}:format=auto,format=yuv420p[v]"
+        f"[bg][av]overlay={av_x}:{av_y}:format=auto[ov]"
     )
+    if subtitle_ass:
+        subtitle_ass = Path(subtitle_ass)
+        filter_complex += f";[ov]subtitles={subtitle_ass.name},format=yuv420p[v]"
+    else:
+        filter_complex += ";[ov]format=yuv420p[v]"
 
     cmd = [ffmpeg_path, "-y"]
     if bg_is_image:
@@ -69,5 +78,5 @@ def compose_video(
         cmd += ["-t", f"{duration_seconds:.3f}"]
     cmd += [str(out_path)]
 
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, cwd=str(out_path.parent))
     return out_path

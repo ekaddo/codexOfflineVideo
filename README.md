@@ -78,6 +78,7 @@ Presets control framing, background style, and layout for “news anchor” or �
 - Default preset in `config.json`: `preset` (`news_anchor`, `corporate_presenter`, `teacher`, `coach`, `podcast_closeup`, `ceo_keynote`, or `none`)
 - Optional custom background image: `preset_background`
  - Composition settings: `composition.encoder`, `composition.preset`, `composition.crf`
+ - Presets with a content panel also render karaoke-style spoken text with per-word highlight.
 
 For GPU encoding on NVIDIA, set `composition.encoder` to `h264_nvenc` and a NVENC preset like `p4`.
 
