@@ -77,6 +77,9 @@ Edit `config.json` to point to your local EchoMimic repo and weights. The app wi
 Presets control framing, background style, and layout for “news anchor” or “corporate presenter” looks.
 - Default preset in `config.json`: `preset` (`news_anchor`, `corporate_presenter`, `teacher`, `coach`, `podcast_closeup`, `ceo_keynote`, or `none`)
 - Optional custom background image: `preset_background`
+ - Composition settings: `composition.encoder`, `composition.preset`, `composition.crf`
+
+For GPU encoding on NVIDIA, set `composition.encoder` to `h264_nvenc` and a NVENC preset like `p4`.
 
 The GUI includes a preset dropdown and optional background image picker.
 

@@ -6,6 +6,11 @@
   "image_size": 512,
   "preset": "news_anchor",
   "preset_background": "",
+  "composition": {
+    "encoder": "h264_nvenc",
+    "preset": "p4",
+    "crf": 23
+  },
   "tts": {
     "enable": true,
     "model_name": "tts_models/multilingual/multi-dataset/xtts_v2",

@@ -7,6 +7,8 @@ from pathlib import Path
 import os
 import subprocess
 
+import soundfile as sf
+
 from .audio_utils import split_audio
 from .config import load_config
 from .compositing import compose_video
@@ -151,12 +153,21 @@ class AvatarPipeline:
                 if configured_bg:
                     background_override = Path(configured_bg)
             bg_path = render_background(preset, output_dir / "presets", background_override)
+            duration_sec = None
+            try:
+                duration_sec = float(sf.info(str(audio_path)).duration)
+            except Exception:
+                duration_sec = None
             compose_video(
                 background_path=bg_path,
                 avatar_video_path=raw_video_path,
                 out_path=final_video_path,
                 preset=preset,
                 ffmpeg_path=self.config.get("ffmpeg_path", "ffmpeg"),
+                duration_seconds=duration_sec,
+                encoder=self.config.get("composition", {}).get("encoder", "libx264"),
+                preset_speed=self.config.get("composition", {}).get("preset", "veryfast"),
+                crf=int(self.config.get("composition", {}).get("crf", 23)),
             )
             composed_path = final_video_path
         else:

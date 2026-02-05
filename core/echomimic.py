@@ -9,6 +9,45 @@ import shutil
 import soundfile as sf
 
 
+def _has_audio_stream(video_path: Path) -> bool:
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "a",
+                "-show_entries",
+                "stream=index",
+                "-of",
+                "csv=p=0",
+                str(video_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return bool(result.stdout.strip())
+    except Exception:
+        return False
+
+
+def _pick_best_output(candidates: list[Path]) -> Path:
+    if not candidates:
+        raise FileNotFoundError("EchoMimic did not produce an output video.")
+
+    # Prefer files that have audio, then explicit *_withaudio naming, then newest mtime.
+    scored = []
+    for p in candidates:
+        has_audio = 1 if _has_audio_stream(p) else 0
+        withaudio_name = 1 if "_withaudio" in p.name.lower() else 0
+        mtime = p.stat().st_mtime
+        scored.append((has_audio, withaudio_name, mtime, p))
+    scored.sort(reverse=True)
+    return scored[0][3]
+
+
 def _write_config(
     echomimic_dir: Path,
     weights_dir: Path,
@@ -125,10 +164,7 @@ def run_echomimic(
             reverse=True,
         )
 
-    if not new_files:
-        raise FileNotFoundError("EchoMimic did not produce an output video.")
-
-    newest = new_files[0]
+    newest = _pick_best_output(new_files)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(newest, out_path)
     return out_path

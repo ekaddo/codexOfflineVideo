@@ -12,6 +12,10 @@ def compose_video(
     out_path: str | Path,
     preset: Preset,
     ffmpeg_path: str = "ffmpeg",
+    duration_seconds: float | None = None,
+    encoder: str = "libx264",
+    preset_speed: str = "veryfast",
+    crf: int = 23,
 ) -> Path:
     background_path = Path(background_path)
     avatar_video_path = Path(avatar_video_path)
@@ -35,16 +39,35 @@ def compose_video(
     else:
         cmd += ["-i", str(background_path)]
     cmd += ["-i", str(avatar_video_path)]
+    quality_flag = "-crf"
+    extra_rc = []
+    if "nvenc" in encoder:
+        quality_flag = "-cq"
+        extra_rc = ["-rc", "vbr"]
+
     cmd += [
         "-filter_complex",
         filter_complex,
+        "-r",
+        str(preset.fps),
         "-map",
         "[v]",
         "-map",
         "1:a?",
+        "-c:v",
+        encoder,
+        "-preset",
+        preset_speed,
+        *extra_rc,
+        quality_flag,
+        str(crf),
+        "-pix_fmt",
+        "yuv420p",
         "-shortest",
-        str(out_path),
     ]
+    if duration_seconds:
+        cmd += ["-t", f"{duration_seconds:.3f}"]
+    cmd += [str(out_path)]
 
     subprocess.run(cmd, check=True)
     return out_path
